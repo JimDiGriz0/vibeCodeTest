@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="ru" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Интерактивный анализ: Предпосылки конфликта и статус Крыма</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* Base typography and custom scrollbar */
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap');
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #fafaf9; /* stone-50 - Warm neutral */
+        color: #334155; /* slate-700 */
+      }
+      h1,
+      h2,
+      h3,
+      .serif {
+        font-family: 'Merriweather', serif;
+      }
+
+      /* Chart Container Styling - MANDATORY */
+      .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+        height: 350px;
+        max-height: 450px;
+      }
+      @media (min-width: 768px) {
+        .chart-container {
+          height: 400px;
+        }
+      }
+
+      /* Tab active state */
+      .tab-btn.active {
+        border-bottom: 2px solid #1e3a8a; /* blue-900 */
+        color: #1e3a8a;
+        font-weight: 600;
+      }
+      .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease-in-out;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Timeline CSS */
+      .timeline-container {
+        border-left: 2px solid #cbd5e1; /* slate-300 */
+        padding-left: 1.5rem;
+        margin-left: 1rem;
+      }
+      .timeline-item {
+        position: relative;
+        margin-bottom: 2rem;
+      }
+      .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.95rem;
+        top: 0.25rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        background-color: #1e3a8a;
+        border-radius: 50%;
+      }
+    </style>
+  </head>
+  <body class="antialiased selection:bg-blue-200 selection:text-blue-900">
+    <!-- Chosen Palette: Warm Neutrals with Deep Blue Accents (stone-50 background, slate-700 text, blue-900 highlights) -->
+    <!-- Application Structure Plan: 
+         1. Header/Intro: Establishes context and tone.
+         2. Navigation: Sticky bar for easy access to key questions.
+         3. Section "Whose is Crimea?": Directly answers the user's specific question first, using a Donut chart to show international consensus vs. de facto control.
+         4. Section "Causes of Conflict": Uses interactive tabs to break down complex geopolitical, domestic, and ideological factors without overwhelming the user.
+         5. Section "Dynamics": Uses a Line chart to show territorial changes over time, visualizing the physical impact of the conflict.
+         This structure is chosen because it directly answers the user's prompt immediately, then provides the nuanced, multi-faceted context necessary to understand the "why". -->
+    <!-- Visualization & Content Choices: 
+         - Crimea UN Vote (Donut Chart): Goal: Show international legal standing. Justification: A donut chart clearly illustrates the overwhelming majority recognizing Ukraine's borders vs those supporting Russia. Method: Chart.js.
+         - Causes (Interactive Tabs): Goal: Organize complex narratives. Justification: Prevents text walls, allows user to explore geopolitical (NATO), ideological, and domestic reasons selectively. Method: Vanilla JS + Tailwind.
+         - Territorial Control (Line Chart): Goal: Show the evolution of the physical conflict. Justification: A timeline/line chart effectively visualizes the scale of the 2014 annexation vs the 2022 full-scale invasion. Method: Chart.js.
+         - Timeline (HTML/CSS): Goal: Provide historical anchor points. Justification: Clean, scannable format for events leading to the crisis. Method: Tailwind + Custom CSS.
+         - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. Unicode used for icons. -->
+
+    <!-- Navigation -->
+    <nav
+      class="sticky top-0 z-50 bg-stone-50/90 backdrop-blur border-b border-stone-200 shadow-sm"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex items-center">
+            <span class="text-xl font-bold text-slate-800 tracking-tight"
+              >Geo<span class="text-blue-900">Analysis</span></span
+            >
+          </div>
+          <div
+            class="flex items-center space-x-4 text-sm font-medium text-slate-600 hidden md:flex"
+          >
+            <a href="#intro" class="hover:text-blue-900 transition-colors">Введение</a>
+            <a href="#crimea" class="hover:text-blue-900 transition-colors"
+              >Статус Крыма</a
+            >
+            <a href="#causes" class="hover:text-blue-900 transition-colors"
+              >Причины конфликта</a
+            >
+            <a href="#dynamics" class="hover:text-blue-900 transition-colors">Динамика</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Header Section -->
+    <header id="intro" class="max-w-5xl mx-auto px-4 py-16 sm:py-24">
+      <div class="text-center">
+        <h1 class="text-4xl sm:text-5xl font-bold text-slate-900 mb-6 leading-tight">
+          Российско-украинский конфликт:<br /><span
+            class="text-blue-900 font-light italic"
+            >Анализ причин и статус территорий</span
+          >
+        </h1>
+        <p class="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+          Интерактивный отчет предоставляет комплексный обзор предпосылок крупнейшего
+          военного конфликта в Европе XXI века. Данный материал структурирует
+          геополитические, исторические и правовые аспекты, опираясь на международное
+          право и анализ заявлений сторон.
+        </p>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 space-y-24">
+      <!-- Section 1: Crimea -->
+      <section
+        id="crimea"
+        class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 md:p-12"
+      >
+        <div class="mb-10 text-center max-w-3xl mx-auto">
+          <span class="text-blue-900 font-semibold tracking-wider uppercase text-sm"
+            >Территориальный спор</span
+          >
+          <h2 class="text-3xl font-bold text-slate-900 mt-2 mb-4">Чей Крым?</h2>
+          <p class="text-slate-600 text-lg">
+            Этот раздел разъясняет правовой и фактический статус Крымского полуострова,
+            демонстрируя разрыв между международным правом и фактическим контролем (de
+            facto vs. de jure), что стало отправной точкой текущего кризиса в 2014 году.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h3 class="text-xl font-bold text-slate-800 mb-4">
+              ⚖️ С точки зрения Международного права (De jure)
+            </h3>
+            <p class="mb-6 text-slate-600 leading-relaxed">
+              Согласно нормам международного права и резолюциям Генеральной Ассамблеи ООН,
+              <strong>Крым является суверенной территорией Украины</strong>. Аннексия
+              полуострова Россией в марте 2014 года не признана подавляющим большинством
+              стран мира. Проведенный тогда референдум состоялся в присутствии российских
+              военных (т.н. "зеленых человечков") и противоречил Конституции Украины.
+            </p>
+
+            <h3 class="text-xl font-bold text-slate-800 mb-4">
+              🇷🇺 Позиция России (De facto)
+            </h3>
+            <p class="text-slate-600 leading-relaxed">
+              Российская Федерация считает Крым и Севастополь неотъемлемой частью своей
+              территории на основе результатов спорного референдума 2014 года. Россия
+              осуществляет полный политический, военный и экономический контроль над
+              полуостровом, интегрировав его в свою правовую систему. Москва исторически
+              апеллирует к передаче Крыма УССР в 1954 году и наличию базы Черноморского
+              флота.
+            </p>
+          </div>
+
+          <div class="bg-stone-50 rounded-xl p-6 border border-stone-200">
+            <h4 class="text-center font-bold text-slate-800 mb-2">
+              Резолюция ГА ООН 68/262 (2014)
+            </h4>
+            <p class="text-center text-sm text-slate-500 mb-6">
+              «Территориальная целостность Украины»
+            </p>
+            <!-- Chart Container for Crimea Vote -->
+            <div class="chart-container">
+              <canvas id="crimeaVoteChart"></canvas>
+            </div>
+            <p class="text-xs text-center text-slate-400 mt-4">
+              Взаимодействуйте с диаграммой для просмотра деталей голосования стран ООН.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Causes of the Conflict -->
+      <section id="causes">
+        <div class="mb-10 text-center max-w-3xl mx-auto">
+          <span class="text-blue-900 font-semibold tracking-wider uppercase text-sm"
+            >Глубинный анализ</span
+          >
+          <h2 class="text-3xl font-bold text-slate-900 mt-2 mb-4">
+            Причины и предпосылки конфликта
+          </h2>
+          <p class="text-slate-600 text-lg">
+            Причины войны многогранны и различаются в зависимости от оптики. В этом
+            разделе мы структурировали основные факторы: от заявленных геополитических
+            интересов до внутриполитических и идеологических нарративов.
+          </p>
+        </div>
+
+        <!-- Interactive Tabs -->
+        <div
+          class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden"
+        >
+          <div class="flex flex-wrap border-b border-stone-200 bg-stone-50/50">
+            <button
+              class="tab-btn active flex-1 py-4 px-6 text-sm md:text-base font-medium text-slate-500 hover:text-slate-800 transition-colors outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              data-target="tab-geo"
+            >
+              🌍 Геополитика & НАТО
+            </button>
+            <button
+              class="tab-btn flex-1 py-4 px-6 text-sm md:text-base font-medium text-slate-500 hover:text-slate-800 transition-colors outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              data-target="tab-domestic"
+            >
+              🏛️ Внутренняя политика
+            </button>
+            <button
+              class="tab-btn flex-1 py-4 px-6 text-sm md:text-base font-medium text-slate-500 hover:text-slate-800 transition-colors outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              data-target="tab-ideology"
+            >
+              📜 Идеология & Идентичность
+            </button>
+          </div>
+
+          <div class="p-8 md:p-12">
+            <!-- Tab 1: Geopolitics -->
+            <div id="tab-geo" class="tab-content active">
+              <h3 class="text-2xl font-bold text-slate-800 mb-4">
+                Геополитический фактор и расширение НАТО
+              </h3>
+              <p class="mb-6 text-slate-600">
+                Один из главных аргументов, выдвигаемых российским руководством для
+                обоснования агрессии, строится вокруг архитектуры европейской
+                безопасности.
+              </p>
+
+              <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-stone-50 p-6 rounded-lg border-l-4 border-blue-800">
+                  <h4 class="font-bold text-slate-800 mb-2">Нарратив России</h4>
+                  <ul class="list-disc list-inside text-slate-600 space-y-2">
+                    <li>
+                      Расширение НАТО на восток рассматривается как экзистенциальная
+                      угроза безопасности РФ.
+                    </li>
+                    <li>
+                      Отказ Запада предоставить "гарантии безопасности" (непринятие
+                      Украины в Альянс) в конце 2021 года.
+                    </li>
+                    <li>
+                      Стремление сохранить Украину в сфере своего стратегического и
+                      экономического влияния.
+                    </li>
+                  </ul>
+                </div>
+                <div class="bg-stone-50 p-6 rounded-lg border-l-4 border-slate-400">
+                  <h4 class="font-bold text-slate-800 mb-2">Позиция Украины и Запада</h4>
+                  <ul class="list-disc list-inside text-slate-600 space-y-2">
+                    <li>
+                      НАТО — оборонительный альянс, который не угрожает России. Расширение
+                      обусловлено желанием стран Восточной Европы защититься от реваншизма
+                      РФ.
+                    </li>
+                    <li>
+                      Суверенное право Украины самостоятельно выбирать векторы внешней
+                      политики и союзы.
+                    </li>
+                    <li>
+                      До 2014 года поддержка вступления в НАТО в Украине была низкой;
+                      агрессия РФ сама спровоцировала стремление Киева в Альянс.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 2: Domestic Politics -->
+            <div id="tab-domestic" class="tab-content">
+              <h3 class="text-2xl font-bold text-slate-800 mb-4">
+                Внутриполитические и режимные факторы
+              </h3>
+              <p class="mb-6 text-slate-600">
+                Многие аналитики указывают, что внешняя экспансия часто используется для
+                решения внутриполитических проблем и удержания власти.
+              </p>
+
+              <div class="space-y-6">
+                <div class="flex items-start">
+                  <span class="text-2xl mr-4 mt-1">🔄</span>
+                  <div>
+                    <h4 class="font-bold text-slate-800">
+                      Страх перед "Цветными революциями"
+                    </h4>
+                    <p class="text-slate-600">
+                      Евромайдан (Революция Достоинства) 2014 года в Киеве был воспринят
+                      Кремлем не как народный протест, а как инспирированный Западом
+                      переворот. Успешная демократическая Украина рассматривается как
+                      прямая угроза авторитарному режиму в РФ ("дурной пример" для
+                      россиян).
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-start">
+                  <span class="text-2xl mr-4 mt-1">📈</span>
+                  <div>
+                    <h4 class="font-bold text-slate-800">
+                      "Крымский консенсус" и рейтинги
+                    </h4>
+                    <p class="text-slate-600">
+                      Аннексия Крыма в 2014 году привела к рекордному росту рейтинга В.
+                      Путина. Возможным мотивом полномасштабного вторжения 2022 года могла
+                      быть попытка повторить этот эффект "маленькой победоносной войны" на
+                      фоне стагнирующей экономики РФ.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 3: Ideology -->
+            <div id="tab-ideology" class="tab-content">
+              <h3 class="text-2xl font-bold text-slate-800 mb-4">
+                Имперская идеология и исторический ревизионизм
+              </h3>
+              <p class="mb-6 text-slate-600">
+                Официальная риторика РФ накануне вторжения опиралась на специфическое
+                прочтение истории и отрицание украинской государственности.
+              </p>
+
+              <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                  <h4 class="font-bold text-slate-800 mb-2">Концепт "Русского мира"</h4>
+                  <p class="text-slate-600 mb-4">
+                    Идеология, предполагающая, что Россия имеет право и обязанность
+                    защищать русскоязычное население за пределами своих границ. Этот
+                    аргумент активно использовался для оправдания поддержки сепаратистов
+                    на Донбассе с 2014 года и вторжения в 2022 году.
+                  </p>
+
+                  <h4 class="font-bold text-slate-800 mb-2">Отрицание субъектности</h4>
+                  <p class="text-slate-600">
+                    Статья В. Путина "Об историческом единстве русских и украинцев" (2021
+                    г.) и его речи де-факто отказывают украинской нации в праве на
+                    отдельное существование, утверждая, что современная Украина была
+                    "создана Лениным".
+                  </p>
+                </div>
+                <div
+                  class="bg-stone-800 text-stone-100 p-6 rounded-lg relative overflow-hidden"
+                >
+                  <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">⚔️</div>
+                  <h4 class="font-bold mb-2">Заявленные цели РФ (2022)</h4>
+                  <ul class="list-disc list-inside space-y-2 text-stone-300 text-sm">
+                    <li>
+                      <strong>"Демилитаризация":</strong> уничтожение военного потенциала
+                      Украины.
+                    </li>
+                    <li>
+                      <strong>"Денацификация":</strong> смена власти в Киеве (основано на
+                      ложном обвинении украинского руководства в нацизме).
+                    </li>
+                    <li><strong>Защита Донбасса:</strong> признание ДНР и ЛНР.</li>
+                  </ul>
+                  <p class="mt-4 text-xs italic text-stone-400">
+                    Примечание: В ходе конфликта цели неоднократно менялись в зависимости
+                    от военных успехов или неудач.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Dynamics & Timeline -->
+      <section id="dynamics">
+        <div class="mb-10 text-center max-w-3xl mx-auto">
+          <span class="text-blue-900 font-semibold tracking-wider uppercase text-sm"
+            >Хронология и масштаб</span
+          >
+          <h2 class="text-3xl font-bold text-slate-900 mt-2 mb-4">Динамика эскалации</h2>
+          <p class="text-slate-600 text-lg">
+            Раздел демонстрирует, как локальный политический кризис перерос в глобальный
+            военный конфликт. Визуализация контроля территорий отражает масштаб нарушения
+            суверенитета Украины.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-12">
+          <!-- Timeline text -->
+          <div class="lg:col-span-2">
+            <h3 class="text-xl font-bold text-slate-800 mb-6">Ключевые вехи</h3>
+            <div class="timeline-container">
+              <div class="timeline-item">
+                <span class="text-sm font-bold text-blue-900"
+                  >Ноябрь 2013 - Февраль 2014</span
+                >
+                <h4 class="font-bold text-slate-800">Евромайдан</h4>
+                <p class="text-sm text-slate-600 mt-1">
+                  Отказ президента Януковича от ассоциации с ЕС приводит к массовым
+                  протестам, его бегству и смене власти в Киеве.
+                </p>
+              </div>
+              <div class="timeline-item">
+                <span class="text-sm font-bold text-blue-900">Март 2014</span>
+                <h4 class="font-bold text-slate-800">Аннексия Крыма</h4>
+                <p class="text-sm text-slate-600 mt-1">
+                  Появление российских войск без опознавательных знаков, проведение
+                  непризнанного референдума.
+                </p>
+              </div>
+              <div class="timeline-item">
+                <span class="text-sm font-bold text-blue-900">Весна 2014 - 2022</span>
+                <h4 class="font-bold text-slate-800">Война на Донбассе</h4>
+                <p class="text-sm text-slate-600 mt-1">
+                  Вооруженный конфликт на востоке Украины с участием пророссийских
+                  сепаратистов при скрытой поддержке армии РФ. Минские соглашения
+                  замораживают конфликт.
+                </p>
+              </div>
+              <div class="timeline-item">
+                <span class="text-sm font-bold text-blue-900">24 Февраля 2022</span>
+                <h4 class="font-bold text-slate-800">Полномасштабное вторжение</h4>
+                <p class="text-sm text-slate-600 mt-1">
+                  РФ атакует Украину с нескольких направлений, включая попытку захвата
+                  Киева.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart: Territorial Control -->
+          <div
+            class="lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col justify-center"
+          >
+            <h4 class="text-center font-bold text-slate-800 mb-2">
+              Оккупированная территория Украины
+            </h4>
+            <p class="text-center text-sm text-slate-500 mb-6">
+              % от общей площади в границах 1991 года (оценочно)
+            </p>
+
+            <!-- Chart Container for Territory Dynamics -->
+            <div class="chart-container">
+              <canvas id="territoryChart"></canvas>
+            </div>
+            <p class="text-xs text-slate-400 mt-4 text-center">
+              Оценки являются приблизительными. Максимум (около 27%) был достигнут в марте
+              2022 г., после чего Украина вернула часть территорий в ходе контрнаступлений
+              под Киевом, Харьковом и Херсоном.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer
+      class="bg-slate-900 text-slate-400 py-8 text-center border-t border-slate-800"
+    >
+      <div class="max-w-7xl mx-auto px-4">
+        <p class="mb-2">
+          Представленная информация базируется на нормах международного права, резолюциях
+          ООН и анализе открытых источников.
+        </p>
+        <p class="text-sm">&copy; 2024 GeoAnalysis Interactive Report.</p>
+      </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // --- Tab Switching Logic ---
+        const tabBtns = document.querySelectorAll('.tab-btn')
+        const tabContents = document.querySelectorAll('.tab-content')
+
+        tabBtns.forEach((btn) => {
+          btn.addEventListener('click', () => {
+            // Remove active class from all
+            tabBtns.forEach((b) => b.classList.remove('active'))
+            tabContents.forEach((c) => c.classList.remove('active'))
+
+            // Add active class to clicked
+            btn.classList.add('active')
+            const targetId = btn.getAttribute('data-target')
+            document.getElementById(targetId).classList.add('active')
+          })
+        })
+
+        // --- Chart.js Configuration & Rendering ---
+
+        // Common default font settings
+        Chart.defaults.font.family = "'Inter', sans-serif"
+        Chart.defaults.color = '#64748b' // slate-500
+
+        // 1. Crimea UN Vote Chart (Donut)
+        const ctxCrimea = document.getElementById('crimeaVoteChart').getContext('2d')
+        new Chart(ctxCrimea, {
+          type: 'doughnut',
+          data: {
+            labels: [
+              'За Украину (За резолюцию)',
+              'Воздержались / Не голосовали',
+              'Против (Поддержали РФ)',
+            ],
+            datasets: [
+              {
+                data: [100, 58 + 24, 11], // 58 abstained + 24 absent
+                backgroundColor: [
+                  '#1e3a8a', // blue-900 (Pro-Ukraine/UN)
+                  '#cbd5e1', // slate-300 (Neutral)
+                  '#991b1b', // red-800 (Pro-Russia)
+                ],
+                borderWidth: 0,
+                hoverOffset: 4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  padding: 20,
+                  usePointStyle: true,
+                },
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    let label = context.label || ''
+                    if (label) {
+                      label += ': '
+                    }
+                    label += context.raw + ' стран'
+                    return label
+                  },
+                },
+              },
+            },
+            cutout: '65%',
+          },
+        })
+
+        // 2. Territorial Control Timeline Chart (Line)
+        const ctxTerritory = document.getElementById('territoryChart').getContext('2d')
+        new Chart(ctxTerritory, {
+          type: 'line',
+          data: {
+            labels: [
+              '2013',
+              'Крым (2014)',
+              'Донбасс (2015)',
+              'Март 2022',
+              'Осень 2022',
+              '2024',
+            ],
+            datasets: [
+              {
+                label: '% Оккупированной территории',
+                data: [0, 4.5, 7, 27, 18, 18], // Approximate percentages
+                borderColor: '#991b1b', // red-800
+                backgroundColor: 'rgba(153, 27, 27, 0.1)',
+                borderWidth: 3,
+                pointBackgroundColor: '#991b1b',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                fill: true,
+                tension: 0.3,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 35,
+                ticks: {
+                  callback: function (value) {
+                    return value + '%'
+                  },
+                },
+                grid: {
+                  color: '#f1f5f9', // slate-100
+                },
+              },
+              x: {
+                grid: {
+                  display: false,
+                },
+              },
+            },
+            plugins: {
+              legend: {
+                display: false,
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    return 'Оккупировано: ' + context.raw + '%'
+                  },
+                },
+              },
+            },
+          },
+        })
+      })
+    </script>
+  </body>
+</html>
